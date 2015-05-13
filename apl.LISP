@@ -202,28 +202,33 @@
 (defmethod reshape ((obj1 tensor)(obj2 tensor))
   "Reshapes a tensor with the dimensions of the first tensor and values of second"
   (let* ((tensor1 (tensor-read obj1))
-        (tensor2 (tensor-read obj2))
-         (iter1 (- (length tensor1) 2))
+         (tensor2 (tensor-read obj2))
          (temp '()))
-    (loop for i from 0 to iter1 do
-          (loop for j from 0 to (- (nth i tensor1) 1) do
-                (setf temp (append temp (list () ))
-                (print i)
-                (print temp)))
+    (cond ((= (length tensor1) 1) (progn (loop for i from 0 to (- (first tensor1) 1) do
+                                               (setf temp (append temp (list (nth i tensor2)))))
+                                    (make-tensor temp)))
+      (t (loop for i from 0 to (- (first tensor1) 1) do
+               (setf temp (append temp (list (reshape (make-tensor (rest tensor1)) obj2)))))))
     temp))
-          
 
+;;;count numbers needed
 
-
-          
-          
-    ;;;cons temp with args of obj1 -1
-    ;;;preencher com nr from last list
-    
-    
-    
-    
-  
+;;; working always same numbers
+(defmethod reshape2 ((obj1 tensor)(obj2 tensor))
+  "Reshapes a tensor with the dimensions of the first tensor and values of second"
+  (let* ((tensor1 (tensor-read obj1))
+         (tensor2 (tensor-read obj2))
+         (temp '()))
+    (cond ((= (length tensor1) 1) (progn (loop for i from 0 to (- (first tensor1) 1) do
+                                               (setf temp (append temp (list (nth i tensor2)))))
+                                    (make-tensor temp)))
+      (t (loop for i from 0 to (- (first tensor1) 1) do
+               (setf temp (append temp (list (reshape (make-tensor (rest tensor1)) obj2)))))))
+    (make-tensor temp)))
+           
+           
+           
+           
   
   
 
