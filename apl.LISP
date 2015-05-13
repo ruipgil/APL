@@ -41,7 +41,8 @@
              (print-object-aux1 (rest lista) stream)))))))
 
 
-(defun count-dimensions (lista) 
+(defun count-dimensions (lista)
+  "Counts the dimensions present in the given list"
     (let ((counter 0)
 	  (temp lista))
       (loop while (not (null temp)) do
@@ -99,14 +100,18 @@
   "Negation function"
   (monadicmap obj #'(lambda (num) (if (= num 0) 1 0))))
 
-;;; Verficar de novo depois de implementar o reshape
-(defun shape (tensor)
+;;; Confirmar 
+(defmethod shape ((obj tensor))
   "Returns a vector with size of the tensor"
-  (let ((lista (tensor-read tensor)))
-    (if (= (count-dimensions lista) 1)
-        (v (length (tensor-read tensor)))
-      (progn (shape (make-tensor (first lista)))
-        (shape (make-tensor (rest lista)))))))
+  (let* ((temp '())
+         (lista (tensor-read obj))
+         (dim (count-dimensions lista)))
+    (loop for i from 0 to dim do 
+          (progn (setf temp (append temp (list (length lista))))
+            (if (not(atom(first lista)))
+                (setf lista (first lista)))))
+  (make-tensor temp)))
+                
 
 (defun number-sequence (min max &optional (step 1))
   "Returns a list within the min and max interval"
@@ -190,7 +195,39 @@
   (dyadicmap obj1 obj2 #'or ))
 
 (defmethod .and ((obj1 tensor) (obj2 tensor))
- (dyadicmap obj1 obj2 #'and ))
+  (dyadicmap obj1 obj2 #'and ))
+
+
+;;;not working
+(defmethod reshape ((obj1 tensor)(obj2 tensor))
+  "Reshapes a tensor with the dimensions of the first tensor and values of second"
+  (let* ((tensor1 (tensor-read obj1))
+        (tensor2 (tensor-read obj2))
+         (iter1 (- (length tensor1) 2))
+         (temp '()))
+    (loop for i from 0 to iter1 do
+          (loop for j from 0 to (- (nth i tensor1) 1) do
+                (setf temp (append temp (list () ))
+                (print i)
+                (print temp)))
+    temp))
+          
+
+
+
+          
+          
+    ;;;cons temp with args of obj1 -1
+    ;;;preencher com nr from last list
+    
+    
+    
+    
+  
+  
+  
+
+
 
 
 
