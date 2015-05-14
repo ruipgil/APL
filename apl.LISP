@@ -1,6 +1,6 @@
 
 ;;; Tensor type definition
-;;; (make-tensor '( (((1 2)(3 4)) ((5 1)(2 3))) (((1 2)(3 4)) ((5 1)(2 3)))   ))
+
 
 
 (defclass tensor ()
@@ -35,7 +35,7 @@
       (t (progn 
            (progn (print-object-aux1 (first lista) stream)
            (if (not (= size 0))
-	    (loop for i from 0 to (count-dimensions  lista) do
+	    (loop for i from 0 to (- (count-dimensions  lista) 1) do
                (progn (format stream "~%")
                  (- size 1))))
              (print-object-aux1 (rest lista) stream)))))))
@@ -121,7 +121,7 @@
 ;;; ALLEGRO PROBLEM, IN CLISP interval is accepted
 (defun interval1 (num)
   "Interval of numbers between 0 and the given number"
-  (v (number-sequence 0 num)))
+  (make-tensor (number-sequence 1 num)))
 
 
 ;;; DYADIC FUNCTIONS
@@ -198,43 +198,62 @@
   (dyadicmap obj1 obj2 #'and ))
 
 
-;;;not working
-(defmethod reshape-aux ((obj1 tensor)(obj2 tensor) counter)
+(defun reshape-aux (tensor1 tensor2)
+  (let ((indice 0))
+    (labels ((recursao  (tensor1 tensor2)
+               (let ((temp '()))
+                 (cond ((null (cdr tensor1))
+                        (progn 
+                          (loop for i from 0 to (- (first tensor1) 1) do 
+                                (setf temp (append temp (list (nth (mod indice (length tensor2)) tensor2))))
+                                (incf indice))
+                           temp))
+                   (t (loop for i from 0 to (- (first tensor1) 1) do
+                            (setf temp (append temp (list (recursao (rest tensor1) tensor2)))))
+                     temp)))))
+      (recursao tensor1 tensor2)))) 
+  
+(defmethod reshape ((obj1 tensor)(obj2 tensor))
   "Reshapes a tensor with the dimensions of the first tensor and values of second"
-  (let* ((tensor1 (tensor-read obj1))
-         (tensor2 (tensor-read obj2))
-         (temp '())
-         (indice counter))
-    (cond ((= (length tensor1) 1) (progn (loop for i from 0 to (- (first tensor1) 1) do
-                                               (progn (if (>= indice (length tensor2))
-                                                          (setf indice 0)) 
-                                                 (setf temp (append temp (list (nth indice tensor2))))
-                                                 (incf indice))))
-                                    (make-tensor temp))
-      (t (loop for i from 0 to (- (first tensor1) 1) do
-               (setf temp (append temp (list (reshape-aux (make-tensor (rest tensor1)) obj2 indice))))
-               (setf indice (+ indice (apply '* (rest tensor1))))
-               (print (apply '* (rest tensor1))))))
+  (make-tensor (reshape-aux (tensor-read obj1) (flatten (tensor-read obj2)))))
+
+(defun flatten (structure)
+  "Auxiliar function to remove parentisis from a list, keeping values."
+  (cond ((null structure) nil)
+        ((atom structure) (list structure))
+    (t (mapcan #'flatten structure))))
+
+(defun drop-aux (tensor1 tensor2)
+  (let* ((num tensor1)
+         (tensor tensor2)
+         (size (- (length tensor) 1))
+         (temp '()))
+    (cond ((atom (first tensor))
+                 (if (< (first num) 0)
+                     (loop for i from 0 to (+ size (first num)) do
+                           (setf temp (append temp (list (nth i tensor)))))
+                   (loop for i from (first num) to size do
+                         (setf temp (append temp (list (nth i tensor)))))))
+      (t (if (< (first num) 0)
+               (loop for i from 0 to (+ size (first num)) do
+                     (setf temp (append temp (list (nth i tensor)))))
+           (loop for i from (first num) to size do
+                  (setf temp (append temp (list (nth i tensor))))))
+        (loop for i from 0 to (- (length temp) 1) do
+              (setf (nth i temp) (drop-aux (rest num) (nth i temp)))))) 
     temp))
 
-(defmethod reshape ((obj1 tensor)(obj2 tensor))
-  (make-tensor (reshape-aux obj1 obj2 0)))
+(defmethod drop ((obj1 tensor) (obj2 tensor))
+  "Deletes number of columns/rows specified in tensor obj1 from tensor obj2"
+  (make-tensor (drop-aux (tensor-read obj1) (tensor-read obj2))))
 
 
 
-;;; working always same numbers
-(defmethod reshape2 ((obj1 tensor)(obj2 tensor))
-  "Reshapes a tensor with the dimensions of the first tensor and values of second"
-  (let* ((tensor1 (tensor-read obj1))
-         (tensor2 (tensor-read obj2))
-         (temp '()))
-    (cond ((= (length tensor1) 1) (progn (loop for i from 0 to (- (first tensor1) 1) do
-                                               (setf temp (append temp (list (nth i tensor2)))))
-                                    (make-tensor temp)))
-      (t (loop for i from 0 to (- (first tensor1) 1) do
-               (setf temp (append temp (list (reshape (make-tensor (rest tensor1)) obj2)))))))
-    (make-tensor temp)))
-           
+
+
+
+
+
            
            
            
