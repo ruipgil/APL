@@ -199,19 +199,28 @@
 
 
 ;;;not working
-(defmethod reshape ((obj1 tensor)(obj2 tensor))
+(defmethod reshape-aux ((obj1 tensor)(obj2 tensor) counter)
   "Reshapes a tensor with the dimensions of the first tensor and values of second"
   (let* ((tensor1 (tensor-read obj1))
          (tensor2 (tensor-read obj2))
-         (temp '()))
+         (temp '())
+         (indice counter))
     (cond ((= (length tensor1) 1) (progn (loop for i from 0 to (- (first tensor1) 1) do
-                                               (setf temp (append temp (list (nth i tensor2)))))
-                                    (make-tensor temp)))
+                                               (progn (if (>= indice (length tensor2))
+                                                          (setf indice 0)) 
+                                                 (setf temp (append temp (list (nth indice tensor2))))
+                                                 (incf indice))))
+                                    (make-tensor temp))
       (t (loop for i from 0 to (- (first tensor1) 1) do
-               (setf temp (append temp (list (reshape (make-tensor (rest tensor1)) obj2)))))))
+               (setf temp (append temp (list (reshape-aux (make-tensor (rest tensor1)) obj2 indice))))
+               (setf indice (+ indice (apply '* (rest tensor1))))
+               (print (apply '* (rest tensor1))))))
     temp))
 
-;;;count numbers needed
+(defmethod reshape ((obj1 tensor)(obj2 tensor))
+  (make-tensor (reshape-aux obj1 obj2 0)))
+
+
 
 ;;; working always same numbers
 (defmethod reshape2 ((obj1 tensor)(obj2 tensor))
