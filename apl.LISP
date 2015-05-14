@@ -290,9 +290,9 @@
   "Accepts a function and returns another funtion which receives one arg. 
 Computes sucessive op's to list elements and retuns the result"
   (lambda (tensor)
-    (let ((result 0)
-          (vec (tensor-read tensor)))
-      (loop for i from 0 to (- (length vec) 1) do
+    (let* ((vec (tensor-read tensor))
+           (result (first vec)))
+      (loop for i from 1 to (- (length vec) 1) do
             (setf result (first (tensor-read (funcall op (s result) (s (nth i vec)))))))
       result)))
 
