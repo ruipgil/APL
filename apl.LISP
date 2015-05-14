@@ -265,6 +265,20 @@
     result))
 
 
+(defmethod select ((obj1 tensor)(obj2 tensor))
+  (make-tensor (select-aux (tensor-read obj1) (tensor-read obj2))))
+
+(defun select-aux (tensor1 tensor2)
+  (let ((result '()))
+    (cond ((atom (first tensor2))
+           (loop for i from 0 to (- (length tensor2) 1) do
+                 (if (= (nth i tensor1) 1)
+                     (setf result (append result (list (nth i tensor2)))))))
+      (t (setf result (append result (list(select-aux tensor1 (first tensor2)))))
+        (setf result (append result (list (select-aux tensor1 (first(rest tensor2))))))))
+    result))
+
+
 
 
 
