@@ -296,6 +296,15 @@ Computes sucessive op's to list elements and retuns the result"
             (setf result (first (tensor-read (funcall op (s result) (s (nth i vec)))))))
       result)))
 
+(defmethod scan (op)
+  (lambda (tensor)
+    (let* ((vec (tensor-read tensor))
+           (result (first vec)))
+      (loop for i from 1 to (- (length vec) 1) do
+            (setf (nth i vec) (first (tensor-read (funcall op (s result) (s (nth i vec))))))
+            (setf result (nth i vec)))
+    vec)))
+
                         
       
       
