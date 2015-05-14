@@ -1,8 +1,6 @@
 
 ;;; Tensor type definition
 
-
-
 (defclass tensor ()
   ((lista :type list 
      :initarg :lista
@@ -74,11 +72,10 @@
 
 ;;; Monadic Functions 
   
-(defmethod monadicmap ((obj tensor) op)
+(defun monadicmap (tensor op)
   "Maps a tensor to a single argument operation"
-  (let ((tensor (tensor-read obj)))
-         (cond ((null tensor) nil)
-           ((atom (first tensor)) (make-tensor (map 'list op tensor))))))
+  (cond ((null tensor) nil)
+        ((atom (first tensor)) (map 'list op tensor))))
 
 ;;; .- function defined in dyadic functions
 
@@ -86,19 +83,19 @@
 
 (defmethod .! ((obj tensor))
   "Factorial function"
-  (monadicmap obj #'(lambda (num) (reduce #'* (loop for i from 1 to num collect i)))))
+  (make-tensor (monadicmap (tensor-read obj) #'(lambda (num) (reduce #'* (loop for i from 1 to num collect i))))))
 
 (defmethod .sin ((obj tensor))
   "Sin function"
-  (monadicmap obj #'sin))
+  (make-tensor (monadicmap (tensor-read obj) #'sin)))
 
 (defmethod .cos ((obj tensor))
   "Cos function"
-  (monadicmap obj #'cos))
+  (make-tensor (monadicmap (tensor-read obj) #'cos)))
 
 (defmethod .not ((obj tensor))
   "Negation function"
-  (monadicmap obj #'(lambda (num) (if (= num 0) 1 0))))
+  (make-tensor (monadicmap (tensor-read obj) #'(lambda (num) (if (= num 0) 1 0)))))
 
 ;;; Confirmar 
 (defmethod shape ((obj tensor))
@@ -246,6 +243,37 @@
 (defmethod drop ((obj1 tensor) (obj2 tensor))
   "Deletes number of columns/rows specified in tensor obj1 from tensor obj2"
   (make-tensor (drop-aux (tensor-read obj1) (tensor-read obj2))))
+
+
+
+(defmethod member? ((obj1 tensor)(obj2 tensor))
+  "Checks if obj1 tensor contains any number from obj2 tensor."
+  (make-tensor (member?-aux (tensor-read obj1) (tensor-read obj2))))
+
+(defun member?-aux (tensor1 tensor2)
+  (let ((result (monadicmap tensor1 #'identity)))
+    (cond ((null tensor1) nil)
+          ((atom (first tensor1)) 
+           (loop for i from 0 to (- (length tensor1) 1) do
+                (setf (nth i result) 0))
+           (loop for i from 0 to (- (length tensor1) 1) do
+                 (loop for j from 0 to (- (length tensor2) 1) do
+                       (if (= (nth i tensor1) (nth j tensor2))
+                           (setf (nth i result) 1)))))
+      (t (setf result (append result (list (member?-aux (first tensor1) tensor2))))
+        (setf result (append result (list (member?-aux (rest tensor1) tensor2))))))
+    result))
+
+
+
+
+
+                        
+      
+      
+
+
+  
 
 
 
