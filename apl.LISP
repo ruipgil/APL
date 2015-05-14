@@ -266,6 +266,7 @@
 
 
 (defmethod select ((obj1 tensor)(obj2 tensor))
+  "Returns a tensor of booleans with the same shape and dimension of 1st arg."
   (make-tensor (select-aux (tensor-read obj1) (tensor-read obj2))))
 
 (defun select-aux (tensor1 tensor2)
@@ -281,6 +282,19 @@
 
 
 
+;;;; MISSING CATENATE
+
+;;; MONADIC OPERATORS
+
+(defmethod fold (op)
+  "Accepts a function and returns another funtion which receives one arg. 
+Computes sucessive op's to list elements and retuns the result"
+  (lambda (tensor)
+    (let ((result 0)
+          (vec (tensor-read tensor)))
+      (loop for i from 0 to (- (length vec) 1) do
+            (setf result (first (tensor-read (funcall op (s result) (s (nth i vec)))))))
+      result)))
 
                         
       
