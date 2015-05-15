@@ -116,7 +116,7 @@
     (cons min (number-sequence (+ min step) max step))))
 
 ;;; ALLEGRO PROBLEM, IN CLISP interval is accepted
-(defun interval1 (num)
+(defun interval (num)
   "Interval of numbers between 0 and the given number"
   (make-tensor (number-sequence 1 num)))
 
@@ -345,6 +345,33 @@ Computes sucessive op's to list elements and retuns the result"
                  (setf result (append result (list (outer-iter-right (nth i tensor1) tensor2 op))))))
         (format t "ONE ~A ~%" result)
         (make-tensor result)))))
+
+;;;; EXERCISES
+
+(defmethod tally ((obj tensor))
+"Given a tensor retunrs a scalar with the number of elements."
+  (s (funcall (fold #'.*) (shape obj))))
+
+(defmethod rank ((obj tensor))
+ "Given a tensor returns a scalar with the dimension of elements."
+  (s (shape (shape obj))))
+
+(defmethod within ((obj tensor) (scalar1 tensor) (scalar2 tensor))
+  "Given a vector and two scalars returns the values in interval defined by the scalars."
+  (select (funcall #'.<= (select (funcall #'.>= obj scalar1) obj) scalar2) (select (funcall #'.>= obj scalar1) obj)))
+  
+(defmethod ravel ((obj tensor))
+  "Given a tensor, returns a vector with all elements of tensor."
+  (reshape (v (first (tensor-read (tally obj)))) obj))
+
+;;; (defmethod primes ((obj tensor))
+;;; (select 
+;;;  (funcall #'.% 
+;;;    (drop (s 1) (interval1 (first (tensor-read obj)))) 
+;;;    (funcall #'.// 
+;;;      (drop (s 1) (interval1 (first (tensor-read obj)))) 
+;;;      (funcall #'.sqrt (drop (s 1) (interval1 (first (tensor-read obj)))))))
+;;;  (drop (s 1) (interval1 (first (tensor-read obj))))))
 
 
 
