@@ -264,7 +264,7 @@
 
 (defun member?-aux (tensor1 tensor2)
   (let ((result (monadicmap tensor1 #'identity)))
-    (cond ((null tensor1) nil)
+    (cond 
           ((atom (first tensor1)) 
            (loop for i from 0 to (- (length tensor1) 1) do
                 (setf (nth i result) 0))
@@ -272,8 +272,8 @@
                  (loop for j from 0 to (- (length tensor2) 1) do
                        (if (= (nth i tensor1) (nth j tensor2))
                            (setf (nth i result) 1)))))
-      (t (setf result (append result (list (member?-aux (first tensor1) tensor2))))
-        (setf result (append result (list (member?-aux (rest tensor1) tensor2))))))
+      (t (if (not(null (first tensor1)))(setf result (append result (list (member?-aux (first tensor1) tensor2)))))
+        (if (not(null (rest tensor1)))(setf result (append result (list (member?-aux (rest tensor1) tensor2)))))))
     result))
 
 
