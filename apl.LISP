@@ -174,25 +174,25 @@
   (dyadicmap obj1 obj2 #'mod ))
  
 (defmethod .< ((obj1 tensor) (obj2 tensor))
-  (dyadicmap obj1 obj2 #'< ))
+  (dyadicmap obj1 obj2 #'(lambda (tensor1 tensor2) (if (< tensor1 tensor2) 1 0))))  
 
 (defmethod .> ((obj1 tensor) (obj2 tensor))
-  (dyadicmap obj1 obj2 #'> ))
+ (dyadicmap obj1 obj2 #'(lambda (tensor1 tensor2) (if (> tensor1 tensor2) 1 0))))  
 
 (defmethod .<= ((obj1 tensor) (obj2 tensor))
- (dyadicmap obj1 obj2 #'<= ))
+ (dyadicmap obj1 obj2 #'(lambda (tensor1 tensor2) (if (<= tensor1 tensor2) 1 0))))  
 
 (defmethod .>= ((obj1 tensor) (obj2 tensor))
- (dyadicmap obj1 obj2 #'>= ))
+ (dyadicmap obj1 obj2 #'(lambda (tensor1 tensor2) (if (>= tensor1 tensor2) 1 0))))  
 
 (defmethod .= ((obj1 tensor) (obj2 tensor))
- (dyadicmap obj1 obj2 #'= ))
+ (dyadicmap obj1 obj2 #'(lambda (tensor1 tensor2) (if (= tensor1 tensor2) 1 0))))    
 
 (defmethod .or ((obj1 tensor) (obj2 tensor))
-  (dyadicmap obj1 obj2 #'or ))
+  (dyadicmap obj1 obj2 #'(lambda (tensor1 tensor2) (if (or tensor1 tensor2) 1 0))))  
 
 (defmethod .and ((obj1 tensor) (obj2 tensor))
-  (dyadicmap obj1 obj2 #'and ))
+  (dyadicmap obj1 obj2 #'(lambda (tensor1 tensor2) (if (and tensor1 tensor2) 1 0))))  
 
 
 (defun reshape-aux (tensor1 tensor2)
@@ -297,13 +297,62 @@ Computes sucessive op's to list elements and retuns the result"
       result)))
 
 (defmethod scan (op)
+  "Applies op the increasinglt large subsets of the elements of the vector."
   (lambda (tensor)
     (let* ((vec (tensor-read tensor))
            (result (first vec)))
       (loop for i from 1 to (- (length vec) 1) do
             (setf (nth i vec) (first (tensor-read (funcall op (s result) (s (nth i vec))))))
             (setf result (nth i vec)))
-    vec)))
+      vec)))
+
+(defmethod outer-product (op)
+  (lambda (obj1 obj2) 
+    (let* ((tensor1 (tensor-read obj1))
+           (tensor2 (tensor-read obj2))
+           (result '()))
+      (labels ((calc-outer (tensor1 tensor2 op)
+        (let ((result '())
+              (temp '())) 
+          (loop for i from 0 to (- (length tensor1) 1) do 
+                (loop for j from 0 to (- (length tensor2) 1) do
+                      (setf temp (append temp (list (funcall op (s (nth i tensor1)) (s (nth j tensor2)))))))
+                (setf result (append result (list temp)))
+                (setf temp '()))
+           (format t "ONE ~A ~%" result)
+          result))
+        (outer-iter-right (tensor1 tensor2 op)
+          (let ((result '())
+                 (temp '()))
+             (cond ((and 
+                     (atom (first tensor1))
+                     (atom (first tensor2)))
+                    (setf result (calc-outer tensor1 tensor2 op)))
+               ((atom (first tensor1)) 
+                (loop for i from 0 to (- (length tensor1) 1) do
+                      (loop for j from 0 to (- (length tensor2) 1) do
+                            (if (atom (nth j tensor2))
+                                (setf temp (append temp (list (calc-outer (list (nth i tensor1)) (list (nth j tensor2)) op))))
+                              (setf temp (append temp (list (outer-iter-right (list (nth i tensor1)) (nth j tensor2) op))))))
+                      ;;; works for vector x matrix but not matrix x vector (remove list)
+                      (setf result (append result (list (list temp))))
+                      (setf temp '()))))
+             (format t "TWO ~A ~%" result)
+             result)))
+         (if (atom (first tensor1))
+             (setf result (outer-iter-right tensor1 tensor2 op))
+           (loop for i from 0 to (- (length tensor1) 1) do
+                 (setf result (append result (list (outer-iter-right (nth i tensor1) tensor2 op))))))
+        (format t "ONE ~A ~%" result)
+        (make-tensor result)))))
+
+
+
+
+
+            
+
+
 
                         
       
