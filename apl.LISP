@@ -115,7 +115,6 @@
   (when (<= min max)
     (cons min (number-sequence (+ min step) max step))))
 
-;;; ALLEGRO PROBLEM, IN CLISP interval is accepted
 (defun interval (num)
   "Interval of numbers between 0 and the given number"
   (make-tensor (number-sequence 1 num)))
@@ -149,49 +148,62 @@
   
  
 (defmethod .+ ((obj1 tensor) (obj2 tensor))
+  "Addition function."
   (dyadicmap obj1 obj2 #'+ ))
 
 
 ;;;Monadic & Dyadic
 (defmethod .- ((obj1 tensor) &optional obj2)
+  "Subtraction function."
   (if (null obj2)
       (monadicmap obj1 #'-)
       (dyadicmap obj1 obj2 #'- )))
 
 (defmethod .* ((obj1 tensor) (obj2 tensor))
+  "Multiplication function."
   (dyadicmap obj1 obj2 #'* ))
 
 ;;;Monadic & Dyadic
 (defmethod ./ ((obj1 tensor) &optional obj2)
+  "Division function."
     (if (null obj2)
       (monadicmap obj1 #'/)
       (dyadicmap obj1 obj2 #'/ )))
 
 (defmethod .// ((obj1 tensor) (obj2 tensor))
+  "Integer division function."
   (dyadicmap obj1 obj2 #'floor ))
 
 (defmethod .% ((obj1 tensor) (obj2 tensor))
+  "Remainder integer division function."
   (dyadicmap obj1 obj2 #'mod ))
  
 (defmethod .< ((obj1 tensor) (obj2 tensor))
+  "Less than function."
   (dyadicmap obj1 obj2 #'(lambda (tensor1 tensor2) (if (< tensor1 tensor2) 1 0))))  
 
 (defmethod .> ((obj1 tensor) (obj2 tensor))
- (dyadicmap obj1 obj2 #'(lambda (tensor1 tensor2) (if (> tensor1 tensor2) 1 0))))  
+  "Bigger than function."
+  (dyadicmap obj1 obj2 #'(lambda (tensor1 tensor2) (if (> tensor1 tensor2) 1 0))))
 
 (defmethod .<= ((obj1 tensor) (obj2 tensor))
+  "Less or equal than function."
  (dyadicmap obj1 obj2 #'(lambda (tensor1 tensor2) (if (<= tensor1 tensor2) 1 0))))  
 
 (defmethod .>= ((obj1 tensor) (obj2 tensor))
+  "Bigger or equal than function."
  (dyadicmap obj1 obj2 #'(lambda (tensor1 tensor2) (if (>= tensor1 tensor2) 1 0))))  
 
 (defmethod .= ((obj1 tensor) (obj2 tensor))
+  "Equal function."
  (dyadicmap obj1 obj2 #'(lambda (tensor1 tensor2) (if (= tensor1 tensor2) 1 0))))    
 
 (defmethod .or ((obj1 tensor) (obj2 tensor))
+  "Or function."
   (dyadicmap obj1 obj2 #'(lambda (tensor1 tensor2) (if (or tensor1 tensor2) 1 0))))  
 
 (defmethod .and ((obj1 tensor) (obj2 tensor))
+  "And function."
   (dyadicmap obj1 obj2 #'(lambda (tensor1 tensor2) (if (and tensor1 tensor2) 1 0))))  
 
 
@@ -307,6 +319,7 @@ Computes sucessive op's to list elements and retuns the result"
       vec)))
 
 (defmethod outer-product (op)
+  "Receives a function and returns the outer product of two tensors."
   (lambda (obj1 obj2) 
     (let* ((tensor1 (tensor-read obj1))
            (tensor2 (tensor-read obj2))
