@@ -74,8 +74,13 @@
   
 (defun monadicmap (tensor op)
   "Maps a tensor to a single argument operation"
-  (cond ((null tensor) nil)
-        ((atom (first tensor)) (map 'list op tensor))))
+  (let ((solution '()))
+    (cond 
+     ((atom (first tensor)) (setf solution (map 'list op tensor)))
+     (t 
+      (loop for i from 0 to (- (length tensor) 1) do
+            (setf solution (append solution (list (monadicmap (nth i tensor) op)))))))
+    solution))
 
 ;;; .- function defined in dyadic functions
 
@@ -115,22 +120,32 @@
   (when (<= min max)
     (cons min (number-sequence (+ min step) max step))))
 
-(defun interval (num)
+(defun interval1 (num)
   "Interval of numbers between 0 and the given number"
   (make-tensor (number-sequence 1 num)))
 
 
 ;;; DYADIC FUNCTIONS
 
-  
-(defmethod dyadicmap ((obj1 tensor)(obj2 tensor) op)
-  "Maps two tensors to a double argument operation"
+(defmethod dyadicmap ((obj1 tensor) (obj2 tensor) op)
   (let ((tensor1 (tensor-read obj1))
-        (tensor2 (tensor-read obj2)))
-    (cond ((= (length tensor1) 1) (make-tensor (dyadicmap-aux2 (first tensor1) tensor2 op)))
-      ((= (length tensor2) 1) (make-tensor (dyadicmap-aux2 (first tensor2) tensor1 op)))
-      ((= (length tensor1) (length tensor2)) (make-tensor (dyadicmap-aux1 tensor1 tensor2 op)))
-      (t "Error: Tensor's size must be equal or one of them scalar"))))
+        (tensor2 (tensor-read obj2))
+        (solution '()))
+    (cond 
+     ((atom (first tensor1))
+      (setf solution (dyadicmap2 tensor1 tensor2 op)))
+     (t 
+      (loop for i from 0 to (- (length tensor1) 1) do
+            (setf solution (append solution (list (dyadicmap (make-tensor (nth i tensor1)) (make-tensor (nth i tensor2)) op)))))))
+    solution))
+
+  
+(defmethod dyadicmap2 (tensor1 tensor2 op)
+  "Maps two tensors to a double argument operation"
+    (cond ((= (length tensor1) 1) (dyadicmap-aux2 (first tensor1) tensor2 op))
+      ((= (length tensor2) 1) (dyadicmap-aux2 (first tensor2) tensor1 op))
+      ((= (length tensor1) (length tensor2)) (dyadicmap-aux1 tensor1 tensor2 op))
+      (t "Error: Tensor's size must be equal or one of them scalar")))
 
 (defmethod dyadicmap-aux1 (lista1 lista2 op)
   "Applies a operation between the elements of 2 lists. Returns the corresponding list."
@@ -148,15 +163,15 @@
   
  
 (defmethod .+ ((obj1 tensor) (obj2 tensor))
-  "Addition function."
-  (dyadicmap obj1 obj2 #'+ ))
+  (make-tensor (dyadicmap obj1 obj2 #'+ )))
+
 
 
 ;;;Monadic & Dyadic
 (defmethod .- ((obj1 tensor) &optional obj2)
   "Subtraction function."
   (if (null obj2)
-      (monadicmap obj1 #'-)
+      (make-tensor (monadicmap (tensor-read obj1) #'-))
       (dyadicmap obj1 obj2 #'- )))
 
 (defmethod .* ((obj1 tensor) (obj2 tensor))
@@ -167,7 +182,7 @@
 (defmethod ./ ((obj1 tensor) &optional obj2)
   "Division function."
     (if (null obj2)
-      (monadicmap obj1 #'/)
+      (make-tensor (monadicmap (tensor-read obj1) #'/))
       (dyadicmap obj1 obj2 #'/ )))
 
 (defmethod .// ((obj1 tensor) (obj2 tensor))
@@ -178,21 +193,31 @@
   "Remainder integer division function."
   (dyadicmap obj1 obj2 #'mod ))
  
-(defmethod .< ((obj1 tensor) (obj2 tensor))
-  "Less than function."
-  (dyadicmap obj1 obj2 #'(lambda (tensor1 tensor2) (if (< tensor1 tensor2) 1 0))))  
+ (defmethod .< ((obj1 tensor) (obj2 tensor))
+"Less function."
+(if (= (length (tensor-read obj1) ) 1)
+  (make-tensor (dyadicmap obj1 obj2 #'(lambda (tensor1 tensor2) (if (> tensor1 tensor2) 1 0))))
+  (make-tensor (dyadicmap obj1 obj2 #'(lambda (tensor1 tensor2) (if (< tensor1 tensor2) 1 0)))))) 
 
 (defmethod .> ((obj1 tensor) (obj2 tensor))
-  "Bigger than function."
-  (dyadicmap obj1 obj2 #'(lambda (tensor1 tensor2) (if (> tensor1 tensor2) 1 0))))
+"Bigger function."
+(if (= (length (tensor-read obj1) ) 1)
+  (make-tensor (dyadicmap obj1 obj2 #'(lambda (tensor1 tensor2) (if (< tensor1 tensor2) 1 0))))
+  (make-tensor (dyadicmap obj1 obj2 #'(lambda (tensor1 tensor2) (if (> tensor1 tensor2) 1 0))))))   
 
 (defmethod .<= ((obj1 tensor) (obj2 tensor))
-  "Less or equal than function."
- (dyadicmap obj1 obj2 #'(lambda (tensor1 tensor2) (if (<= tensor1 tensor2) 1 0))))  
+"Less or equal function."
+ (if (= (length (tensor-read obj1) ) 1)
+  (dyadicmap obj1 obj2 #'(lambda (tensor1 tensor2) (if (>= tensor1 tensor2) 1 0)))
+  (dyadicmap obj1 obj2 #'(lambda (tensor1 tensor2) (if (<= tensor1 tensor2) 1 0)))))   
 
 (defmethod .>= ((obj1 tensor) (obj2 tensor))
-  "Bigger or equal than function."
- (dyadicmap obj1 obj2 #'(lambda (tensor1 tensor2) (if (>= tensor1 tensor2) 1 0))))  
+"Bigger or equal function."
+(if (= (length (tensor-read obj1) ) 1)
+  (make-tensor (dyadicmap obj1 obj2 #'(lambda (tensor1 tensor2) (if (<= tensor1 tensor2) 1 0))))
+  (make-tensor (dyadicmap obj1 obj2 #'(lambda (tensor1 tensor2) (if (>= tensor1 tensor2) 1 0))))))   
+
+
 
 (defmethod .= ((obj1 tensor) (obj2 tensor))
   "Equal function."
@@ -200,11 +225,11 @@
 
 (defmethod .or ((obj1 tensor) (obj2 tensor))
   "Or function."
-  (dyadicmap obj1 obj2 #'(lambda (tensor1 tensor2) (if (or tensor1 tensor2) 1 0))))  
+  (dyadicmap obj1 obj2 #'(lambda (tensor1 tensor2) (if (or (= tensor1 1) (= tensor2 1)) 1 0))))  
 
 (defmethod .and ((obj1 tensor) (obj2 tensor))
   "And function."
-  (dyadicmap obj1 obj2 #'(lambda (tensor1 tensor2) (if (and tensor1 tensor2) 1 0))))  
+  (dyadicmap obj1 obj2 #'(lambda (tensor1 tensor2) (if (and (= tensor1 1) (= tensor2 1)) 1 0))))  
 
 
 (defun reshape-aux (tensor1 tensor2)
@@ -377,15 +402,10 @@ Computes sucessive op's to list elements and retuns the result"
   "Given a tensor, returns a vector with all elements of tensor."
   (reshape (v (first (tensor-read (tally obj)))) obj))
 
-;;; (defmethod primes ((obj tensor))
-;;; (select 
-;;;  (funcall #'.% 
-;;;    (drop (s 1) (interval1 (first (tensor-read obj)))) 
-;;;    (funcall #'.// 
-;;;      (drop (s 1) (interval1 (first (tensor-read obj)))) 
-;;;      (funcall #'.sqrt (drop (s 1) (interval1 (first (tensor-read obj)))))))
-;;;  (drop (s 1) (interval1 (first (tensor-read obj))))))
-
+(defun primes (indice)
+    (let ((numbers (drop (s 1) (interval1 (car (tensor-read indice))))))
+        (select (.not (member? numbers (funcall (outer-product #'.*) numbers numbers)))
+                numbers)))
 
 
 
